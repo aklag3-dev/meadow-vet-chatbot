@@ -24,6 +24,7 @@ export default function ChatInterface() {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -70,19 +71,87 @@ export default function ChatInterface() {
   return (
     <div className="flex flex-col h-dvh max-h-dvh bg-[#f0f2f5]">
       {/* Header */}
-      <header className="bg-[#345535] text-white px-5 py-3.5 flex items-center gap-3 shrink-0 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-[#2a4429] to-[#3d6340] opacity-50" />
-        <div className="relative z-10 flex items-center gap-3 w-full">
-          <div className="w-10 h-10 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center text-xl ring-2 ring-white/20">
+      <header className="bg-white border-b border-[#e0e4e8] shrink-0">
+        <div className="max-w-2xl mx-auto px-5 py-3 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-[#345535] flex items-center justify-center text-lg shadow-sm">
             🐾
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-base font-bold leading-tight tracking-tight">Meadow Vet Care</h1>
-            <p className="text-[11px] text-white/60 font-light">Virtual Assistant</p>
+            <h1 className="text-lg font-bold leading-tight tracking-tight text-[#313536]">Meadow Vet Care</h1>
+            <p className="text-xs text-[#6C7476]">Virtual Assistant</p>
           </div>
           <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_6px_rgba(52,211,153,0.5)]" />
+          <button
+            onClick={() => setShowInfo(true)}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[#6C7476] hover:bg-[#f0f2f5] hover:text-[#313536] transition-colors"
+            aria-label="About this assistant"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+          </button>
         </div>
       </header>
+
+      {/* Info Modal */}
+      {showInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setShowInfo(false)}>
+          <div
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowInfo(false)}
+              className="absolute top-4 right-4 w-7 h-7 rounded-full flex items-center justify-center text-[#6C7476] hover:bg-[#f0f2f5] transition-colors"
+              aria-label="Close"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-full bg-[#345535] flex items-center justify-center text-xl shadow-sm">
+                🐾
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-[#313536]">Meadow Vet Care</h2>
+                <p className="text-sm text-[#6C7476]">Veterinary Clinic</p>
+              </div>
+            </div>
+
+            <div className="space-y-4 text-sm text-[#6C7476] leading-relaxed">
+              <div>
+                <h3 className="font-semibold text-[#313536] mb-1">About Us</h3>
+                <p>
+                  Meadow Vet Care is a trusted veterinary clinic providing comprehensive care for your pets.
+                  We offer a wide range of services including vaccinations, microchipping, dental care,
+                  surgeries, and emergency services for dogs, cats, rabbits, birds, and small mammals.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-[#313536] mb-1">About This Assistant</h3>
+                <p>
+                  This is an AI-powered virtual assistant designed to help you quickly find information
+                  about our services, pricing, availability, and current offers. It connects to our live
+                  service database to provide up-to-date answers to your questions.
+                </p>
+              </div>
+
+              <div className="pt-2 border-t border-[#e8ecf0]">
+                <p className="text-xs text-[#aab5bf]">
+                  For medical emergencies or urgent advice, please call us directly.
+                  This assistant provides general information and does not replace professional veterinary consultation.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-5">
@@ -95,12 +164,12 @@ export default function ChatInterface() {
               }`}
             >
               {msg.role === 'assistant' && (
-                <div className="w-7 h-7 rounded-full bg-[#345535] flex items-center justify-center text-xs mr-2 mt-0.5 shrink-0 shadow-sm">
+                <div className="w-8 h-8 rounded-full bg-[#345535] flex items-center justify-center text-sm mr-2 mt-0.5 shrink-0 shadow-sm">
                   🐾
                 </div>
               )}
               <div
-                className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-[13.5px] leading-relaxed whitespace-pre-wrap ${
+                className={`max-w-[82%] rounded-2xl px-4 py-3 text-[15px] leading-relaxed whitespace-pre-wrap ${
                   msg.role === 'user'
                     ? 'bg-[#79b543] text-white rounded-br-md shadow-[0_1px_3px_rgba(121,181,67,0.3)]'
                     : 'bg-white text-[#6C7476] rounded-bl-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e8ecf0]'
@@ -130,14 +199,14 @@ export default function ChatInterface() {
           {/* Typing indicator */}
           {loading && (
             <div className="flex justify-start message-bubble">
-              <div className="w-7 h-7 rounded-full bg-[#345535] flex items-center justify-center text-xs mr-2 mt-0.5 shrink-0 shadow-sm">
+              <div className="w-8 h-8 rounded-full bg-[#345535] flex items-center justify-center text-sm mr-2 mt-0.5 shrink-0 shadow-sm">
                 🐾
               </div>
               <div className="bg-white rounded-2xl rounded-bl-md px-4 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e8ecf0]">
-                <div className="flex gap-1 items-center">
-                  <span className="typing-dot w-[6px] h-[6px] bg-[#c4cad2] rounded-full inline-block" />
-                  <span className="typing-dot w-[6px] h-[6px] bg-[#c4cad2] rounded-full inline-block" />
-                  <span className="typing-dot w-[6px] h-[6px] bg-[#c4cad2] rounded-full inline-block" />
+                <div className="flex gap-1.5 items-center">
+                  <span className="typing-dot w-2 h-2 bg-[#c4cad2] rounded-full inline-block" />
+                  <span className="typing-dot w-2 h-2 bg-[#c4cad2] rounded-full inline-block" />
+                  <span className="typing-dot w-2 h-2 bg-[#c4cad2] rounded-full inline-block" />
                 </div>
               </div>
             </div>
@@ -155,9 +224,9 @@ export default function ChatInterface() {
               <button
                 key={s.text}
                 onClick={() => sendMessage(s.text)}
-                className="text-[12px] bg-white border border-[#dce1e7] text-[#6C7476] rounded-full px-3 py-1.5 hover:border-[#79b543] hover:text-[#5a8c32] hover:bg-[#f0faf0] transition-all duration-200 flex items-center gap-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                className="text-[13px] bg-white border border-[#dce1e7] text-[#6C7476] rounded-full px-3.5 py-1.5 hover:border-[#79b543] hover:text-[#5a8c32] hover:bg-[#f0faf0] transition-all duration-200 flex items-center gap-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
               >
-                <span className="text-[11px]">{s.icon}</span>
+                <span className="text-xs">{s.icon}</span>
                 {s.text}
               </button>
             ))}
@@ -176,7 +245,7 @@ export default function ChatInterface() {
               onKeyDown={handleKeyDown}
               placeholder="Ask about services, pricing, availability..."
               rows={1}
-              className="flex-1 resize-none px-3 py-2 text-[14px] text-[#313536] placeholder-[#b0b8c1] outline-none bg-transparent leading-snug"
+              className="flex-1 resize-none px-3 py-2 text-[15px] text-[#313536] placeholder-[#b0b8c1] outline-none bg-transparent leading-snug"
             />
             <button
               onClick={() => sendMessage(input)}
