@@ -1,5 +1,5 @@
 // Diagnostic endpoint — checks if LLM_API_KEY is configured
-// DELETE this before going to production
+// Remove before production deployment
 
 import { NextResponse } from 'next/server';
 
