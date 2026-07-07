@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   const key = process.env.LLM_API_KEY || '';
   const baseUrl = process.env.LLM_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/';
-  const model = process.env.LLM_MODEL || 'gemini-2.0-flash';
+  const model = process.env.LLM_MODEL || 'gemini-2.5-flash';
 
   if (!key) {
     return NextResponse.json({
