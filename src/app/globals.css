@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Meadow Vet Care palette — inspired by wellpets.ie */
+  --color-accent: #aab5bf;
+  --color-heading: #313536;
+  --color-body: #6C7476;
+  --color-bg: #e3e7ed;
+  --color-white: #ffffff;
+  --color-hover: #d1e0e9;
+  --color-primary: #79b543;
+  --color-primary-dark: #5a8c32;
+  --color-sidebar: #345535;
+}
+
+body {
+  font-family: 'Lato', sans-serif;
+  color: var(--color-body);
+  background: var(--color-bg);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Muli', sans-serif;
+  color: var(--color-heading);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-accent);
+  border-radius: 3px;
+}
+
+/* Message bubble animations */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.message-bubble {
+  animation: fadeInUp 0.25s ease-out;
+}
+
+/* Typing indicator dots */
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-4px); }
+}
+.typing-dot {
+  animation: bounce 1.2s infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-dot:nth-child(3) { animation-delay: 0.3s; }
