@@ -47,7 +47,8 @@ async function callOpenAICompatible(
     },
   }));
 
-  const res = await fetch(`${baseUrl}/chat/completions`, {
+  const url = `${baseUrl.replace(/\/+$/, '')}/chat/completions`;
+  const res = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -65,6 +66,7 @@ async function callOpenAICompatible(
 
   if (!res.ok) {
     const err = await res.text();
+    console.error(`LLM API ${res.status}:`, err);
     throw new Error(`LLM API error ${res.status}: ${err}`);
   }
 
@@ -119,15 +121,19 @@ async function agentLoop(
 
 export async function chat(userMessage: string): Promise<string> {
   const apiKey = process.env.LLM_API_KEY || '';
-  const baseUrl = process.env.LLM_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai';
+  const baseUrl = process.env.LLM_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/';
   const model = process.env.LLM_MODEL || 'gemini-2.0-flash';
 
   if (!apiKey) {
-    // Demo mode: use MCP tools directly without LLM
     return demoMode(userMessage);
   }
 
-  return agentLoop(userMessage, apiKey, baseUrl, model);
+  try {
+    return await agentLoop(userMessage, apiKey, baseUrl, model);
+  } catch (err) {
+    console.error('Agent loop failed, falling back to demo mode:', err);
+    return demoMode(userMessage);
+  }
 }
 
 // Fallback demo mode when no LLM API key is configured
