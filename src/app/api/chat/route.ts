@@ -11,6 +11,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
+    const apiKey = process.env.LLM_API_KEY || '';
+    console.log(`Chat request - API key ${apiKey ? 'present (' + apiKey.substring(0, 6) + '...)' : 'MISSING'}`);
+
     const reply = await chat(message);
     return NextResponse.json({ reply });
   } catch (err) {

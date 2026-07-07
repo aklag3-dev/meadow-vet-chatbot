@@ -128,12 +128,57 @@ export async function chat(userMessage: string): Promise<string> {
     return demoMode(userMessage);
   }
 
+  // Try OpenAI-compatible endpoint first
   try {
     return await agentLoop(userMessage, apiKey, baseUrl, model);
-  } catch (err) {
-    console.error('Agent loop failed, falling back to demo mode:', err);
+  } catch (openaiErr) {
+    console.warn('OpenAI-compatible endpoint failed, trying native Gemini API:', openaiErr);
+  }
+
+  // Fallback: native Gemini generateContent API
+  try {
+    return await nativeGeminiCall(userMessage, apiKey, model);
+  } catch (nativeErr) {
+    console.error('Native Gemini API also failed:', nativeErr);
     return demoMode(userMessage);
   }
+}
+
+async function nativeGeminiCall(
+  userMessage: string,
+  apiKey: string,
+  model: string,
+): Promise<string> {
+  const { fetchServices, formatPrice } = await import('./sheets');
+  const services = await fetchServices();
+  const servicesJson = JSON.stringify(services);
+
+  const systemInstruction = SYSTEM_PROMPT + `\n\nHere is the current service data as JSON:\n${servicesJson}`;
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: userMessage }] }],
+        systemInstruction: { parts: [{ text: systemInstruction }] },
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 2048,
+        },
+      }),
+    },
+  );
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Gemini native API error ${res.status}: ${err}`);
+  }
+
+  const data = await res.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  return text || 'I couldn\'t generate a response. Please try again.';
 }
 
 // Fallback demo mode when no LLM API key is configured
