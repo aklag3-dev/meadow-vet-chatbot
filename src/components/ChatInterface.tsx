@@ -2,6 +2,21 @@
 
 import { useState, useRef, useEffect } from 'react';
 
+function PawIcon({ size = 36 }: { size?: number }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width={size} height={size}>
+      <circle cx="32" cy="32" r="32" fill="#345535" />
+      <g transform="translate(16,12) scale(0.5)">
+        <ellipse cx="32" cy="48" rx="14" ry="12" fill="#fff" />
+        <ellipse cx="16" cy="28" rx="8" ry="10" fill="#fff" transform="rotate(-15,16,28)" />
+        <ellipse cx="48" cy="28" rx="8" ry="10" fill="#fff" transform="rotate(15,48,28)" />
+        <ellipse cx="8" cy="44" rx="6" ry="8" fill="#fff" transform="rotate(-25,8,44)" />
+        <ellipse cx="56" cy="44" rx="6" ry="8" fill="#fff" transform="rotate(25,56,44)" />
+      </g>
+    </svg>
+  );
+}
+
 interface Message {
   role: 'user' | 'assistant';
   content: string;
@@ -73,8 +88,8 @@ export default function ChatInterface() {
       {/* Header */}
       <header className="bg-white border-b border-[#e0e4e8] shrink-0">
         <div className="max-w-2xl mx-auto px-5 py-3 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-[#345535] flex items-center justify-center text-lg shadow-sm">
-            🐾
+          <div className="w-9 h-9 rounded-full shadow-sm shrink-0 overflow-hidden">
+            <PawIcon size={36} />
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-bold leading-tight tracking-tight text-[#313536]">Meadow Vet Care</h1>
@@ -114,8 +129,8 @@ export default function ChatInterface() {
             </button>
 
             <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-full bg-[#345535] flex items-center justify-center text-xl shadow-sm">
-                🐾
+              <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden shadow-sm">
+                <PawIcon size={40} />
               </div>
               <div>
                 <h2 className="text-xl font-bold text-[#313536]">Meadow Vet Care</h2>
@@ -164,8 +179,8 @@ export default function ChatInterface() {
               }`}
             >
               {msg.role === 'assistant' && (
-                <div className="w-8 h-8 rounded-full bg-[#345535] flex items-center justify-center text-sm mr-2 mt-0.5 shrink-0 shadow-sm">
-                  🐾
+                <div className="w-8 h-8 rounded-full mr-2 mt-0.5 shrink-0 shadow-sm overflow-hidden">
+                  <PawIcon size={32} />
                 </div>
               )}
               <div
@@ -199,8 +214,8 @@ export default function ChatInterface() {
           {/* Typing indicator */}
           {loading && (
             <div className="flex justify-start message-bubble">
-              <div className="w-8 h-8 rounded-full bg-[#345535] flex items-center justify-center text-sm mr-2 mt-0.5 shrink-0 shadow-sm">
-                🐾
+              <div className="w-8 h-8 rounded-full mr-2 mt-0.5 shrink-0 shadow-sm overflow-hidden">
+                <PawIcon size={32} />
               </div>
               <div className="bg-white rounded-2xl rounded-bl-md px-4 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-[#e8ecf0]">
                 <div className="flex gap-1.5 items-center">
