@@ -2,6 +2,16 @@
 
 AI-powered chatbot for Meadow Vet Care, an Irish veterinary clinic with 90+ services. Answers questions about services, pricing, availability, and special offers using live data from a Google Sheet.
 
+- Address: Tonafortes, Carraroe, Co. Sligo
+
+- Eircode: F91 F895
+
+- Work Hours: 9:00am to 5:00pm Monday to Friday (Closed on Public Holidays and Weekends)
+
+- Reception Number (Work Hours): 083 087 3030
+
+- Emergency Number (Out of Hours): 083 087 3131 (€100 Emergency consultation fee and €200 Emergency call out fee)
+
 ## Features
 
 - **Live data** — pulls services directly from a Google Sheet (auto-refreshes every 5 minutes)
