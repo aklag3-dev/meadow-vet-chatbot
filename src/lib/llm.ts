@@ -3,10 +3,21 @@
 
 import { getMCPTools, callMCPTool } from './mcp-tools';
 
-function getSystemPrompt(): string {
+export interface UserLocation {
+  lat: number;
+  lon: number;
+  label?: string;
+}
+
+function getSystemPrompt(location?: UserLocation): string {
   const now = new Date();
   const today = now.toLocaleDateString('en-IE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   const isoDate = now.toISOString().split('T')[0];
+
+  const locationSection = location
+    ? `The user has shared their location: ${location.lat.toFixed(4)}°N, ${location.lon.toFixed(4)}°W${location.label ? ` (${location.label})` : ''}.
+Use these coordinates when calling weather tools — do NOT default to Sligo.`
+    : `The user has NOT shared their location. Weather data defaults to Sligo, Ireland (54.2766, -8.5783). If the user asks about weather, clarify that the data is for Sligo only and encourage them to enable location sharing for more accurate results.`;
 
   return `You are a friendly, knowledgeable assistant for Meadow Vet Care, a modern veterinary clinic in Ireland.
 
@@ -16,7 +27,9 @@ You help pet owners find the right services for their pets. You have LIVE access
 
 You also have access to:
 - Irish public holidays data (so you can tell users if the clinic is open/closed on specific dates)
-- Current weather data for Sligo, Ireland (so you can advise on pet walking conditions)
+- Current weather data (so you can advise on pet walking conditions)
+
+${locationSection}
 
 Guidelines:
 - Always use the MCP tools to get current, accurate data. Never guess prices or availability.
@@ -32,11 +45,16 @@ Guidelines:
 WEATHER GUIDELINES:
 - When providing weather information, include all available data: temperature (actual and feels-like), wind speed/gusts, UV index, and air quality (European AQI).
 - Always advise the user on whether conditions are suitable for walking their pet, taking into account temperature, wind, UV, and air quality.
-- ALWAYS clarify that weather data is for Sligo, Ireland and surrounding areas only. If the user is not nearby, ask them to share their location for more accurate information.
+- When the user has shared their location, weather data will be fetched for their coordinates. When they have NOT shared their location, clarify that weather is for Sligo only.
 - The weather tool returns a full EU/ROI compliant disclaimer — include the key points when providing weather data to users (not official Met Éireann data, forecasts are uncertain beyond 2-3 days, provided for general information only).
 - For UV advice: warn about sunburn risk on pets (especially light-coloured fur, thin ears, nose) when UV is 6+.
 - For air quality: advise shorter walks for brachycephalic breeds (pugs, bulldogs, Persian cats) and elderly pets when AQI is above 60.
 - For wind: advise secure leads and caution for small dogs when gusts exceed 40 km/h.
+
+LOCATION-BASED SERVICES:
+- When the user shares their location, you can provide location-relevant weather advice.
+- You may use the user's location to give contextual information about conditions in their area.
+- Always respect user privacy — do not store, log, or share their location data. It is only used for the current request.
 
 HOLIDAY/DATE GUIDELINES:
 - For holiday/opening questions: use the check_date tool to confirm whether the clinic is open on a specific date.
@@ -105,9 +123,10 @@ async function agentLoop(
   apiKey: string,
   baseUrl: string,
   model: string,
+  location?: UserLocation,
 ): Promise<string> {
   const messages: ChatMessage[] = [
-    { role: 'system', content: getSystemPrompt() },
+    { role: 'system', content: getSystemPrompt(location) },
     { role: 'user', content: userMessage },
   ];
 
@@ -128,6 +147,12 @@ async function agentLoop(
       // Execute each tool call
       for (const tc of response.tool_calls) {
         const args = JSON.parse(tc.function.arguments);
+        // Inject user location into get_weather calls if available and not already set
+        if (tc.function.name === 'get_weather' && location && !args.latitude) {
+          args.latitude = location.lat;
+          args.longitude = location.lon;
+          args.location_name = location.label || `Your location (${location.lat.toFixed(2)}, ${location.lon.toFixed(2)})`;
+        }
         const result = await callMCPTool(tc.function.name, args);
         messages.push({
           role: 'tool',
@@ -145,7 +170,7 @@ async function agentLoop(
   return 'I looked up several things but got stuck. Could you ask a simpler question?';
 }
 
-export async function chat(userMessage: string): Promise<string> {
+export async function chat(userMessage: string, location?: UserLocation): Promise<string> {
   const apiKey = process.env.LLM_API_KEY || '';
   const baseUrl = process.env.LLM_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/';
   const model = process.env.LLM_MODEL || 'gemini-2.5-flash';
@@ -156,14 +181,14 @@ export async function chat(userMessage: string): Promise<string> {
 
   // Try OpenAI-compatible endpoint first
   try {
-    return await agentLoop(userMessage, apiKey, baseUrl, model);
+    return await agentLoop(userMessage, apiKey, baseUrl, model, location);
   } catch (openaiErr) {
     console.warn('OpenAI-compatible endpoint failed, trying native Gemini API:', openaiErr);
   }
 
   // Fallback: native Gemini generateContent API
   try {
-    return await nativeGeminiCall(userMessage, apiKey, model);
+    return await nativeGeminiCall(userMessage, apiKey, model, location);
   } catch (nativeErr) {
     console.error('Native Gemini API also failed:', nativeErr);
     return demoMode(userMessage);
@@ -174,12 +199,13 @@ async function nativeGeminiCall(
   userMessage: string,
   apiKey: string,
   model: string,
+  location?: UserLocation,
 ): Promise<string> {
   const { fetchServices, formatPrice } = await import('./sheets');
   const services = await fetchServices();
   const servicesJson = JSON.stringify(services);
 
-  const systemInstruction = getSystemPrompt() + `\n\nHere is the current service data as JSON:\n${servicesJson}`;
+  const systemInstruction = getSystemPrompt(location) + `\n\nHere is the current service data as JSON:\n${servicesJson}`;
 
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,

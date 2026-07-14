@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 function PawIcon({ size = 36 }: { size?: number }) {
   return (
@@ -22,6 +22,12 @@ interface Message {
   content: string;
 }
 
+interface UserLocation {
+  lat: number;
+  lon: number;
+  label?: string;
+}
+
 const SUGGESTIONS = [
   { text: 'What dog services do you offer?', icon: '🐕' },
   { text: 'Any offers on microchipping?', icon: '🏷️' },
@@ -40,12 +46,59 @@ export default function ChatInterface() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [locationEnabled, setLocationEnabled] = useState(false);
+  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
+
+  const requestLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported by your browser');
+      return;
+    }
+    setLocationLoading(true);
+    setLocationError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+        });
+        setLocationLoading(false);
+      },
+      (err) => {
+        setLocationLoading(false);
+        if (err.code === err.PERMISSION_DENIED) {
+          setLocationError('Location access denied. You can still use the chat — weather defaults to Sligo.');
+          setLocationEnabled(false);
+        } else if (err.code === err.POSITION_UNAVAILABLE) {
+          setLocationError('Location unavailable. Weather defaults to Sligo.');
+          setLocationEnabled(false);
+        } else {
+          setLocationError('Location request timed out. Try again or disable location.');
+          setLocationEnabled(false);
+        }
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+    );
+  }, []);
+
+  const toggleLocation = () => {
+    if (locationEnabled) {
+      setLocationEnabled(false);
+      setUserLocation(null);
+      setLocationError(null);
+    } else {
+      setLocationEnabled(true);
+      requestLocation();
+    }
+  };
 
   const sendMessage = async (text: string) => {
     const trimmed = text.trim();
@@ -57,10 +110,14 @@ export default function ChatInterface() {
     setLoading(true);
 
     try {
+      const body: Record<string, unknown> = { message: trimmed };
+      if (userLocation) {
+        body.location = userLocation;
+      }
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: trimmed }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       const reply = data.reply || 'Sorry, something went wrong. Please try again.';
@@ -252,6 +309,42 @@ export default function ChatInterface() {
       {/* Input */}
       <div className="px-4 pb-4 pt-2 shrink-0">
         <div className="max-w-2xl mx-auto">
+          {/* Location bar */}
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <button
+              onClick={toggleLocation}
+              className={`flex items-center gap-1.5 text-xs rounded-full px-3 py-1.5 border transition-all duration-200 ${
+                locationEnabled
+                  ? 'bg-[#f0faf0] border-[#79b543] text-[#5a8c32]'
+                  : 'bg-white border-[#dce1e7] text-[#8892a0] hover:border-[#aab5bf]'
+              }`}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {locationLoading ? (
+                  <>
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                  </>
+                ) : (
+                  <>
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+                    <circle cx="12" cy="12" r="10" strokeDasharray="4 2" />
+                  </>
+                )}
+              </svg>
+              {locationEnabled
+                ? userLocation
+                  ? `Location: ${userLocation.lat.toFixed(2)}, ${userLocation.lon.toFixed(2)}`
+                  : locationLoading
+                    ? 'Getting location...'
+                    : 'Location on'
+                : 'Use my location'}
+            </button>
+            {locationError && (
+              <span className="text-[11px] text-[#aab5bf] truncate max-w-[200px]">{locationError}</span>
+            )}
+          </div>
+
           <div className="bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-[#e0e4e8] flex items-end p-1.5 focus-within:border-[#79b543] focus-within:shadow-[0_2px_12px_rgba(121,181,67,0.12)] transition-all duration-200">
             <textarea
               ref={inputRef}
