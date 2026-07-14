@@ -1,7 +1,7 @@
-// API route for weather data
+// API route for weather data (enhanced with wind, UV, air quality, and EU/ROI disclaimer)
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentWeather, formatWeatherReport, isGoodForWalkingPet } from '@/lib/weather';
+import { getCurrentWeather, formatWeatherReport, isGoodForWalkingPet, getWeatherDisclaimer } from '@/lib/weather';
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,13 +12,15 @@ export async function GET(req: NextRequest) {
 
     const weather = await getCurrentWeather(lat, lon, location);
     const report = formatWeatherReport(weather);
-    const walkingAdvice = isGoodForWalkingPet(weather.temperature_c, weather.weather_code);
+    const walkingAdvice = isGoodForWalkingPet(weather);
+    const disclaimer = getWeatherDisclaimer();
 
     return NextResponse.json({
       weather,
       report,
       walking_advice: walkingAdvice,
-      disclaimer: 'Weather data is for Sligo, Ireland and surrounding areas only. For a more accurate assessment, please provide your specific location.',
+      disclaimer,
+      location_note: `Weather data is for ${location} and surrounding areas only. For a more accurate assessment, please provide your specific location. Always verify with official Met Éireann forecasts (www.met.ie).`,
     });
   } catch (err) {
     console.error('Weather API error:', err);

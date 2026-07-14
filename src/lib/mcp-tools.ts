@@ -3,7 +3,7 @@
 
 import { fetchServices, formatPrice, VetService } from './sheets';
 import { fetchIrishHolidays, isPublicHoliday, isClosed, getNextHoliday, getHolidaySummary } from './holidays';
-import { getCurrentWeather, isGoodForWalkingPet, formatWeatherReport } from './weather';
+import { getCurrentWeather, isGoodForWalkingPet, formatWeatherReport, getWeatherDisclaimer } from './weather';
 
 export interface MCPTool {
   name: string;
@@ -264,7 +264,7 @@ export function getMCPTools(): MCPTool[] {
     },
     {
       name: 'get_weather',
-      description: 'Get current weather conditions in Sligo, Ireland. IMPORTANT: Always clarify that this weather data is for Sligo and surrounding areas only. If the user is not nearby, ask them to provide their location for more accurate information. Use this when asked about weather conditions, whether it is suitable to walk a pet, or temperature-related questions.',
+      description: 'Get current weather conditions in Sligo, Ireland, including temperature (actual and feels-like), wind speed and gusts, UV index, and air quality data. Includes walking suitability advice for pets. IMPORTANT: Always clarify that this weather data is for Sligo and surrounding areas only. If the user is not nearby, ask them to provide their location for more accurate information.',
       input_schema: {
         type: 'object',
         properties: {
@@ -281,11 +281,13 @@ export function getMCPTools(): MCPTool[] {
 
         const weather = await getCurrentWeather(lat, lon, locationName);
         const report = formatWeatherReport(weather);
-        const walking = isGoodForWalkingPet(weather.temperature_c, weather.weather_code);
+        const walking = isGoodForWalkingPet(weather);
+        const disclaimer = getWeatherDisclaimer();
 
         let result = report;
         result += `\n\nWalking advice: ${walking.advice}`;
         result += `\n\n⚠️ Weather data is for ${locationName} and surrounding areas only. If you are not nearby, please share your location for a more accurate assessment.`;
+        result += `\n\n${disclaimer}`;
 
         return result;
       },
