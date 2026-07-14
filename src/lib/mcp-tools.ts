@@ -640,7 +640,7 @@ export function getMCPTools(): MCPTool[] {
 
         try {
           // OSRM expects coordinates as lon,lat (NOT lat,lon)
-          const url = `https://router.project-osrm.org/routing/v1/${mode}/${fromLon},${fromLat};${toLon},${toLat}?overview=false&steps=false`;
+          const url = `https://router.project-osrm.org/route/v1/${mode}/${fromLon},${fromLat};${toLon},${toLat}?overview=false&steps=false`;
           const res = await fetch(url);
           if (!res.ok) throw new Error(`OSRM API error: ${res.status}`);
           const data = await res.json();
