@@ -2,6 +2,8 @@
 // These tools are exposed to the LLM for live data access
 
 import { fetchServices, formatPrice, VetService } from './sheets';
+import { fetchIrishHolidays, isPublicHoliday, isClosed, getNextHoliday, getHolidaySummary } from './holidays';
+import { getCurrentWeather, isGoodForWalkingPet, formatWeatherReport } from './weather';
 
 export interface MCPTool {
   name: string;
@@ -214,6 +216,78 @@ export function getMCPTools(): MCPTool[] {
 - Services with current offers: ${offers.length}
 - Emergency services: Available 24/7
 - Telehealth: Available for all species`;
+      },
+    },
+    {
+      name: 'check_date',
+      description: 'Check if the clinic is open on a specific date. Use this when asked about opening hours, whether the clinic is open on a particular day, or holiday closures.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          date: { type: 'string', description: 'Date to check in YYYY-MM-DD format' },
+        },
+        required: ['date'],
+      },
+      handler: async (input) => {
+        const dateStr = input.date as string;
+        const { closed, reason } = await isClosed(dateStr);
+        const { isHoliday, holiday } = await isPublicHoliday(dateStr);
+
+        if (closed) {
+          return `The clinic is CLOSED on ${dateStr}. Reason: ${reason}`;
+        }
+
+        let result = `The clinic is OPEN on ${dateStr}.`;
+        if (isHoliday) {
+          result += `\nNote: ${holiday!.name} is a public holiday, but the clinic remains open on this date.`;
+        }
+
+        const nextHoliday = await getNextHoliday();
+        if (nextHoliday) {
+          result += `\nNext upcoming holiday: ${nextHoliday.name} on ${nextHoliday.observed_date}.`;
+        }
+
+        return result;
+      },
+    },
+    {
+      name: 'get_holidays',
+      description: 'Get all Irish public holidays for the current year. Use this when asked about holidays, bank holidays, or when the clinic is closed.',
+      input_schema: {
+        type: 'object',
+        properties: {},
+        required: [],
+      },
+      handler: async () => {
+        return await getHolidaySummary();
+      },
+    },
+    {
+      name: 'get_weather',
+      description: 'Get current weather conditions in Sligo, Ireland. IMPORTANT: Always clarify that this weather data is for Sligo and surrounding areas only. If the user is not nearby, ask them to provide their location for more accurate information. Use this when asked about weather conditions, whether it is suitable to walk a pet, or temperature-related questions.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          latitude: { type: 'number', description: 'Optional: latitude for custom location. Default is Sligo (54.2766).' },
+          longitude: { type: 'number', description: 'Optional: longitude for custom location. Default is Sligo (-8.5783).' },
+          location_name: { type: 'string', description: 'Optional: name of the location for display purposes.' },
+        },
+        required: [],
+      },
+      handler: async (input) => {
+        const lat = (input.latitude as number) || 54.2766;
+        const lon = (input.longitude as number) || -8.5783;
+        const locationName = (input.location_name as string) || 'Sligo, Ireland';
+
+        const weather = await getCurrentWeather(lat, lon, locationName);
+        const report = formatWeatherReport(weather);
+        const walking = isGoodForWalkingPet(weather.temperature_c, weather.weather_code);
+
+        let result = report;
+        result += `\n\nWalking advice: ${walking.advice}`;
+        result += `\n\n⚠️ Weather data is for ${locationName} and surrounding areas only. If you are not nearby, please share your location for a more accurate assessment.`;
+
+        return result;
       },
     },
   ];
