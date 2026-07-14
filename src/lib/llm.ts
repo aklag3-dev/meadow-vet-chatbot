@@ -3,7 +3,14 @@
 
 import { getMCPTools, callMCPTool } from './mcp-tools';
 
-const SYSTEM_PROMPT = `You are a friendly, knowledgeable assistant for Meadow Vet Care, a modern veterinary clinic in Ireland.
+function getSystemPrompt(): string {
+  const now = new Date();
+  const today = now.toLocaleDateString('en-IE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const isoDate = now.toISOString().split('T')[0];
+
+  return `You are a friendly, knowledgeable assistant for Meadow Vet Care, a modern veterinary clinic in Ireland.
+
+Today's date is ${today} (${isoDate}).
 
 You help pet owners find the right services for their pets. You have LIVE access to the clinic's service data through MCP tools.
 
@@ -22,9 +29,11 @@ Guidelines:
 - If a service has no slots this week, mention that but still include it.
 - For emergency questions, emphasize the 24/7 availability.
 - For weather questions: ALWAYS clarify that weather data is for Sligo, Ireland and surrounding areas only. If the user is not nearby, ask them to share their location for more accurate information.
-- For holiday/opening questions: use the check_date tool to confirm whether the clinic is open on a specific date.
+- For holiday/opening questions: use the check_date tool to confirm whether the clinic is open on a specific date. When users ask relative dates like "Monday" or "next week", calculate the actual date using today's date and use the check_date tool with the specific date.
+- When users ask relative date questions (e.g., "Are you open Monday?"), you MUST calculate the actual date and use the check_date tool. Do NOT ask them to specify the date — infer it from the current day.
 
 You are NOT a vet. You cannot give medical advice. Always direct medical concerns to the clinic team.`;
+}
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
@@ -87,7 +96,7 @@ async function agentLoop(
   model: string,
 ): Promise<string> {
   const messages: ChatMessage[] = [
-    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'system', content: getSystemPrompt() },
     { role: 'user', content: userMessage },
   ];
 
@@ -159,7 +168,7 @@ async function nativeGeminiCall(
   const services = await fetchServices();
   const servicesJson = JSON.stringify(services);
 
-  const systemInstruction = SYSTEM_PROMPT + `\n\nHere is the current service data as JSON:\n${servicesJson}`;
+  const systemInstruction = getSystemPrompt() + `\n\nHere is the current service data as JSON:\n${servicesJson}`;
 
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
